@@ -55,6 +55,19 @@ services:
     command: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
     networks:
       - default
+  task-service:
+    build: ./task-service
+    container_name: task_service
+    restart: always
+    env_file: .env
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8002:8002"
+    command: uvicorn main:app --host 0.0.0.0 --port 8002 --reload
+    networks:
+      - default
 
 volumes:
   postgres_data:
