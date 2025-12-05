@@ -6,7 +6,7 @@ from passlib.context import CryptContext
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 @router.post("/register")
 def register(email: str, password: str, db: Session = Depends(get_db)):
