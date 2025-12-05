@@ -4,4 +4,3 @@ sqlalchemy
 pymysql
 python-dotenv
 pydantic
-requests

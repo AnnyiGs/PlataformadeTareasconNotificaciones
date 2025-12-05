@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Task
 from pydantic import BaseModel
+import requests
 from datetime import datetime
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
@@ -33,6 +34,18 @@ def create_task(task: TaskCreate, x_user_id: int = Header(..., alias="X-User-Id"
     db.add(db_task)
     db.commit()
     db.refresh(db_task)
+    # Notify assigned user via Notification Service (in docker use service name)
+    try:
+        notif_payload = {
+            "user_id": db_task.assigned_to,
+            "message": f"Nueva tarea asignada: {db_task.title}",
+            "task_id": db_task.id,
+        }
+        # call notification-service (container name in compose is notification-service)
+        requests.post("http://notification-service:8003/notify", json=notif_payload, timeout=2)
+    except Exception:
+        # avoid failing task creation if notification fails
+        pass
     return db_task
 
 @router.get("/assigned", response_model=list[TaskOut])
