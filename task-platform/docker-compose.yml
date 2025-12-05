@@ -27,10 +27,10 @@ services:
       - mysql_data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-padmin123"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
 
   redis:
     image: redis:7
