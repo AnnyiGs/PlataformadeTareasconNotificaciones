@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Task
 from pydantic import BaseModel
+from datetime import datetime
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -18,7 +19,7 @@ class TaskOut(BaseModel):
     status: str
     assigned_to: int
     created_by: int
-    created_at: str
+    created_at: datetime
 
 @router.post("/", response_model=TaskOut)
 def create_task(task: TaskCreate, x_user_id: int = Header(..., alias="X-User-Id"), db: Session = Depends(get_db)):
