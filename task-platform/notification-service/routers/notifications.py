@@ -5,6 +5,7 @@ from models import Notification
 from pydantic import BaseModel
 from datetime import datetime
 from datetime import timedelta
+from typing import List
 
 router = APIRouter(prefix="", tags=["Notifications"])
 
@@ -62,3 +63,27 @@ def mark_notification_read(
     db.commit()
     db.refresh(notif)
     return notif
+
+
+class MarkReadIn(BaseModel):
+    ids: List[int]
+
+
+@router.post("/notifications/mark-read", response_model=list[NotificationOut])
+def mark_notifications_read_bulk(
+    payload: MarkReadIn,
+    x_user_id: int = Header(..., alias="X-User-Id"),
+    db: Session = Depends(get_db),
+):
+    # Fetch notifications that match the provided ids and belong to the user
+    notes = db.query(Notification).filter(Notification.id.in_(payload.ids), Notification.user_id == x_user_id).all()
+    if not notes:
+        return []
+    for n in notes:
+        n.read = True
+        db.add(n)
+    db.commit()
+    # Refresh and return updated objects
+    for n in notes:
+        db.refresh(n)
+    return notes
