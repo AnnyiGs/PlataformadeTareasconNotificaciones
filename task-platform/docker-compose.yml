@@ -20,6 +20,7 @@ services:
       MYSQL_ROOT_PASSWORD: admin123
       MYSQL_DATABASE: tasks_db
       MYSQL_ROOT_HOST: "%"
+      MYSQL_TCP_PORT: 3306
     ports:
       - "3306:3306"
     volumes:
