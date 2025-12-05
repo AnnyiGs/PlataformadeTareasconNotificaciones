@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Notification
 from pydantic import BaseModel
+from datetime import datetime
 
 router = APIRouter(prefix="", tags=["Notifications"])
 
@@ -17,7 +18,7 @@ class NotificationOut(BaseModel):
     message: str
     task_id: int | None = None
     read: bool
-    created_at: str
+    created_at: datetime
 
 @router.post("/notify")
 def notify(payload: NotifyIn, db: Session = Depends(get_db)):
