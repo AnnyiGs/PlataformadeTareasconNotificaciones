@@ -4,3 +4,4 @@ sqlalchemy
 pymysql
 python-dotenv
 pydantic
+cryptography>=38.0.0

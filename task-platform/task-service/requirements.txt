@@ -5,3 +5,4 @@ pymysql
 python-dotenv
 pydantic
 requests
+cryptography>=38.0.0
