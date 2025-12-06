@@ -6,7 +6,7 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: "nginx"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   tls:
   - hosts:
@@ -16,24 +16,10 @@ spec:
   - host: api.task-platform.local
     http:
       paths:
-      - path: /auth
+      - path: /api(/|$)(.*)
         pathType: Prefix
         backend:
           service:
-            name: auth-service
+            name: gateway
             port:
-              number: 8001
-      - path: /tasks
-        pathType: Prefix
-        backend:
-          service:
-            name: task-service
-            port:
-              number: 8002
-      - path: /notifications
-        pathType: Prefix
-        backend:
-          service:
-            name: notification-service
-            port:
-              number: 8003
+              number: 8000

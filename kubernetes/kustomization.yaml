@@ -10,6 +10,7 @@ resources:
   - deployments/auth-service.yaml
   - deployments/task-service.yaml
   - deployments/notification-service.yaml
+  - deployments/gateway.yaml
   - services/backend-services.yaml
   - ingress.yaml
 
@@ -27,4 +28,6 @@ images:
   - name: annyigs/task-platform-task-service
     newTag: "1.0.0"
   - name: annyigs/task-platform-notification-service
+    newTag: "1.0.0"
+  - name: annyigs/task-platform-gateway
     newTag: "1.0.0"
