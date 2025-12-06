@@ -7,10 +7,10 @@ resources:
   - namespace.yaml
   - secrets-configmaps.yaml
   - databases.yaml
-  - deployments/auth-service.yaml
-  - deployments/task-service.yaml
-  - deployments/notification-service.yaml
-  - deployments/gateway.yaml
+  - task-platform/kubernetes/deployments/auth-service.yaml
+  - task-platform/kubernetes/deployments/task-service.yaml
+  - task-platform/kubernetes/deployments/notification-service.yaml
+  - task-platform/kubernetes/deployments/gateway.yaml
   - services/backend-services.yaml
   - ingress.yaml
 
@@ -23,11 +23,11 @@ commonAnnotations:
   version: "1.0.0"
 
 images:
-  - name: annyigs/task-platform-auth-service
+  - name: andreajos/task-platform-auth-service
     newTag: "1.0.0"
-  - name: annyigs/task-platform-task-service
+  - name: andreajos/task-platform-task-service
     newTag: "1.0.0"
-  - name: annyigs/task-platform-notification-service
+  - name: andreajos/task-platform-notification-service
     newTag: "1.0.0"
-  - name: annyigs/task-platform-gateway
+  - name: andreajos/task-platform-gateway
     newTag: "1.0.0"
