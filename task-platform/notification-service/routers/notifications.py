@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Path
+from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from sqlalchemy.orm import Session
 from database import get_db
 from models import Notification
+from security import verify_token
 from pydantic import BaseModel
 from datetime import datetime
 from datetime import timedelta
@@ -32,11 +33,12 @@ def notify(payload: NotifyIn, db: Session = Depends(get_db)):
 
 @router.get("/notifications", response_model=list[NotificationOut])
 def list_notifications(
-    x_user_id: int = Header(..., alias="X-User-Id"),
+    token: dict = Depends(verify_token),
     unread_only: bool = Query(False, description="If true, return only unread notifications"),
     since_minutes: int | None = Query(None, description="If provided, return notifications created within the last N minutes"),
     db: Session = Depends(get_db),
 ):
+    x_user_id = token["user_id"]
     q = db.query(Notification).filter(Notification.user_id == x_user_id)
     if unread_only:
         q = q.filter(Notification.read == False)
@@ -50,9 +52,10 @@ def list_notifications(
 @router.patch("/notifications/{notif_id}/read", response_model=NotificationOut)
 def mark_notification_read(
     notif_id: int = Path(..., description="ID of the notification to mark read"),
-    x_user_id: int = Header(..., alias="X-User-Id"),
+    token: dict = Depends(verify_token),
     db: Session = Depends(get_db),
 ):
+    x_user_id = token["user_id"]
     notif = db.query(Notification).filter(Notification.id == notif_id).first()
     if not notif:
         raise HTTPException(status_code=404, detail="Notification not found")
@@ -72,9 +75,10 @@ class MarkReadIn(BaseModel):
 @router.post("/notifications/mark-read", response_model=list[NotificationOut])
 def mark_notifications_read_bulk(
     payload: MarkReadIn,
-    x_user_id: int = Header(..., alias="X-User-Id"),
+    token: dict = Depends(verify_token),
     db: Session = Depends(get_db),
 ):
+    x_user_id = token["user_id"]
     # Fetch notifications that match the provided ids and belong to the user
     notes = db.query(Notification).filter(Notification.id.in_(payload.ids), Notification.user_id == x_user_id).all()
     if not notes:

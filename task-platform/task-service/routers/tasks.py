@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from models import Task
+from security import verify_token
 from pydantic import BaseModel
 import requests
 from datetime import datetime
@@ -23,8 +24,9 @@ class TaskOut(BaseModel):
     created_at: datetime
 
 @router.post("/", response_model=TaskOut)
-def create_task(task: TaskCreate, x_user_id: int = Header(..., alias="X-User-Id"), db: Session = Depends(get_db)):
-    # x_user_id is the creator (supervisor)
+def create_task(task: TaskCreate, token: dict = Depends(verify_token), db: Session = Depends(get_db)):
+    # token["user_id"] is the creator (supervisor)
+    x_user_id = token["user_id"]
     db_task = Task(
         title=task.title,
         description=task.description,
@@ -49,13 +51,15 @@ def create_task(task: TaskCreate, x_user_id: int = Header(..., alias="X-User-Id"
     return db_task
 
 @router.get("/assigned", response_model=list[TaskOut])
-def list_assigned(x_user_id: int = Header(..., alias="X-User-Id"), db: Session = Depends(get_db)):
+def list_assigned(token: dict = Depends(verify_token), db: Session = Depends(get_db)):
     # Return tasks assigned to the requesting user
+    x_user_id = token["user_id"]
     tasks = db.query(Task).filter(Task.assigned_to == x_user_id).all()
     return tasks
 
 @router.patch("/{task_id}/status", response_model=TaskOut)
-def update_status(task_id: int, status: str, x_user_id: int = Header(..., alias="X-User-Id"), db: Session = Depends(get_db)):
+def update_status(task_id: int, status: str, token: dict = Depends(verify_token), db: Session = Depends(get_db)):
+    x_user_id = token["user_id"]
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -68,7 +72,7 @@ def update_status(task_id: int, status: str, x_user_id: int = Header(..., alias=
     return task
 
 @router.delete("/{task_id}")
-def delete_or_reassign(task_id: int, assigned_to: int | None = None, x_user_id: int = Header(..., alias="X-User-Id"), db: Session = Depends(get_db)):
+def delete_or_reassign(task_id: int, assigned_to: int | None = None, token: dict = Depends(verify_token), db: Session = Depends(get_db)):
     # For now assume the requester is supervisor (no role check). If assigned_to provided, reassign, else delete
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:

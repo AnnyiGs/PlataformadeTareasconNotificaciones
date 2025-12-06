@@ -6,3 +6,4 @@ python-dotenv
 pydantic
 requests
 cryptography>=38.0.0
+PyJWT>=2.8.0
