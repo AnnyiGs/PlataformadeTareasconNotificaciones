@@ -107,4 +107,86 @@ PRÓXIMOS PASOS RECOMENDADOS (por orden de prioridad):
 4. RBAC y mTLS (SEGURIDAD AVANZADA) — 2-3 horas
 5. Chaos Engineering (RESILENCIA) — 4-6 horas
 
-═══════════════════════════════════════════════════════════════════════════════════ 
+═══════════════════════════════════════════════════════════════════════════════════
+
+RESUMEN EJECUTIVO - CARACTERISTICAS IMPLEMENTADAS:
+
+La plataforma de tareas con notificaciones está funcional y operativa con 59% de requisitos 
+de arquitectura de microservicios completados. A continuación se detalla el estado actual:
+
+CARACTERISTICAS COMPLETADAS:
+
+🔧 SERVICIOS Y ARQUITECTURA:
+   • 3 microservicios independientes: auth-service, task-service, notification-service
+   • Cada servicio con responsabilidad única y bien delimitada
+   • Docker containerización: 7 contenedores en ejecución (MySQL, PostgreSQL, Redis, etc.)
+   • Orquestación con Docker Compose en ambiente de desarrollo/testing
+   • Health checks implementados y funcionales en bases de datos
+
+📡 COMUNICACIÓN INTER-SERVICIOS:
+   • REST API (HTTP + JSON) entre servicios
+   • task-service se comunica con notification-service automáticamente
+   • Validación de tokens JWT en todas las llamadas entre servicios
+   • User isolation: cada usuario solo accede a sus propios datos
+
+🔐 AUTENTICACIÓN Y SEGURIDAD:
+   • JWT tokens (HS256) con expiración de 8 horas
+   • HTTPBearer security scheme en FastAPI para validación automática
+   • Hashing de contraseñas con pbkdf2_sha256 (seguro y sin binarias)
+   • Aislamiento de base de datos por servicio (PostgreSQL para auth, MySQL para tareas)
+   • End-to-end flow verificado: register → login → uso de tokens en endpoints protegidos
+
+💾 PERSISTENCIA DE DATOS:
+   • MySQL 8 para task-service y notification-service (tablas: tasks, notifications)
+   • PostgreSQL 16 para auth-service (tabla: users)
+   • Volúmenes persistentes para datos entre reinicios
+   • Modelos SQLAlchemy con relaciones y validaciones
+
+📝 FUNCIONALIDADES DE NEGOCIO:
+   • Registro de usuarios con email y contraseña
+   • Login con generación automática de JWT token
+   • CRUD completo de tareas (crear, listar, actualizar estado, eliminar)
+   • Notificaciones automáticas al crear/asignar tareas
+   • Listado de notificaciones con filtros (unread_only, since_minutes)
+   • Marcar notificaciones como leídas (individual y en lote)
+
+🧪 VALIDACIÓN Y TESTING:
+   • Flujo E2E completo verificado:
+     1. Registrar usuario → obtener JWT token
+     2. Crear tarea con JWT → auto-notificación
+     3. Consultar notificaciones con JWT → retorna datos filtrados
+     4. Marcar notificación como leída con JWT → actualiza estado
+   • Parametrización de endpoints probada y funcional
+   • Validación de user isolation (usuarios no acceden datos ajenos)
+
+ESTADO ACTUAL POR DOMINIO:
+
+✅ FUNCIONALIDAD CORE: 100% Completado
+   └─ Todas las operaciones CRUD de tareas y notificaciones funcionales
+   └─ Flujos de usuario end-to-end trabajando correctamente
+   └─ Integraciones inter-servicios establecidas
+
+✅ SEGURIDAD BÁSICA: 85% Completado
+   └─ JWT implementado e integrado
+   └─ Hash de contraseñas seguro
+   └─ Validación de tokens en endpoints
+   └─ Pendiente: RBAC (roles) y mTLS (encriptación inter-servicios)
+
+⚠️  PRODUCCIÓN-READY: 25% Completado
+   └─ Estructura escalable base
+   └─ Health checks configurados
+   └─ Pendiente: CI/CD, monitorización, observabilidad, orquestación Kubernetes
+
+METRICAS DE EXITO:
+
+├─ Usuarios registrados: ✅ Funcional
+├─ Tareas creadas: ✅ Funcional (con auto-notificación)
+├─ Notificaciones enviadas: ✅ Funcional (automáticas al asignar)
+├─ Filtrado de notificaciones: ✅ Funcional
+├─ Validación JWT: ✅ Funcional
+├─ Aislamiento de datos: ✅ Funcional
+├─ Containerización: ✅ Funcional
+├─ Comunicación inter-servicios: ✅ Funcional
+
+═══════════════════════════════════════════════════════════════════════════════════
+
