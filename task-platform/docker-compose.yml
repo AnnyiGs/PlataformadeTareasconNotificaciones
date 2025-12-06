@@ -52,7 +52,6 @@ services:
     env_file: .env
     ports:
       - "8001:8001"
-    command: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
     networks:
       - default
   task-service:
@@ -65,7 +64,6 @@ services:
         condition: service_healthy
     ports:
       - "8002:8002"
-    command: uvicorn main:app --host 0.0.0.0 --port 8002 --reload
     networks:
       - default
   notification-service:
@@ -78,7 +76,6 @@ services:
         condition: service_healthy
     ports:
       - "8003:8003"
-    command: uvicorn main:app --host 0.0.0.0 --port 8003 --reload
     networks:
       - default
 

@@ -6,6 +6,11 @@ from security import verify_token
 from pydantic import BaseModel
 import requests
 from datetime import datetime
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+NOTIFICATION_SERVICE_URL = os.getenv("NOTIFICATION_SERVICE_URL", "http://notification-service:8003")
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -36,18 +41,19 @@ def create_task(task: TaskCreate, token: dict = Depends(verify_token), db: Sessi
     db.add(db_task)
     db.commit()
     db.refresh(db_task)
-    # Notify assigned user via Notification Service (in docker use service name)
+    # Notify assigned user via Notification Service
     try:
         notif_payload = {
             "user_id": db_task.assigned_to,
             "message": f"Nueva tarea asignada: {db_task.title}",
             "task_id": db_task.id,
         }
-        # call notification-service (container name in compose is notification-service)
-        requests.post("http://notification-service:8003/notify", json=notif_payload, timeout=2)
-    except Exception:
+        response = requests.post(f"{NOTIFICATION_SERVICE_URL}/notify", json=notif_payload, timeout=2)
+        response.raise_for_status()
+        logger.info(f"Notification sent for task {db_task.id}")
+    except Exception as e:
         # avoid failing task creation if notification fails
-        pass
+        logger.warning(f"Failed to send notification for task {db_task.id}: {str(e)}")
     return db_task
 
 @router.get("/assigned", response_model=list[TaskOut])
