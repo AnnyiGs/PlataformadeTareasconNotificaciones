@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import httpx
 import jwt
+import json
 import os
 import logging
 import time
@@ -40,7 +41,7 @@ JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-jwt-key-change-in-prod
 JWT_ALGORITHM = "HS256"
 
 # Cliente HTTP asíncrono para hacer proxy requests
-http_client = httpx.AsyncClient(timeout=30.0)
+http_client = httpx.AsyncClient(timeout=30.0, follow_redirects=True)
 
 
 # Middleware para logging de requests
@@ -89,9 +90,14 @@ async def validate_jwt_token(request: Request) -> Optional[dict]:
         # Decodificar y validar JWT
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         
-        logger.info(f"✓ JWT validado para user_id: {payload.get('user_id')}")
+        # Extraer user_id del claim "sub"
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token payload")
         
-        return payload
+        logger.info(f"✓ JWT validado para user_id: {user_id}")
+        
+        return {**payload, "user_id": user_id}  # Agregar user_id para facilitar acceso
     
     except jwt.ExpiredSignatureError:
         logger.warning("✗ JWT expirado")
@@ -143,9 +149,13 @@ async def proxy_register(request: Request):
     body = await request.json()
     
     try:
+        # Auth-service usa query params, no body
         response = await http_client.post(
             f"{AUTH_SERVICE_URL}/auth/register",
-            json=body
+            params={
+                "email": body.get("email"),
+                "password": body.get("password")
+            }
         )
         return JSONResponse(
             status_code=response.status_code,
@@ -162,9 +172,13 @@ async def proxy_login(request: Request):
     body = await request.json()
     
     try:
+        # Auth-service usa query params, no body
         response = await http_client.post(
             f"{AUTH_SERVICE_URL}/auth/login",
-            json=body
+            params={
+                "email": body.get("email"),
+                "password": body.get("password")
+            }
         )
         return JSONResponse(
             status_code=response.status_code,
@@ -188,12 +202,16 @@ async def proxy_get_tasks(request: Request):
         raise HTTPException(status_code=401, detail="Authentication required")
     
     user_id = payload.get("user_id")
+    auth_header = request.headers.get("Authorization", "")
     
     try:
-        # Hacer request al task-service con X-User-Id header
+        # Hacer request al task-service con JWT
         response = await http_client.get(
             f"{TASK_SERVICE_URL}/tasks",
-            headers={"X-User-Id": str(user_id)}
+            headers={
+                "Authorization": auth_header,
+                "X-User-Id": str(user_id)
+            }
         )
         return JSONResponse(
             status_code=response.status_code,
@@ -213,13 +231,30 @@ async def proxy_create_task(request: Request):
         raise HTTPException(status_code=401, detail="Authentication required")
     
     user_id = payload.get("user_id")
-    body = await request.json()
+    
+    # Leer body como bytes y decodificar manualmente
+    try:
+        body_bytes = await request.body()
+        body = json.loads(body_bytes.decode('utf-8'))
+    except Exception as e:
+        logger.error(f"Error parsing JSON: {str(e)}")
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+    
+    # Agregar assigned_to automáticamente si no está presente
+    if "assigned_to" not in body:
+        body["assigned_to"] = int(user_id)
+    
+    # Obtener token original del header Authorization
+    auth_header = request.headers.get("Authorization", "")
     
     try:
         response = await http_client.post(
             f"{TASK_SERVICE_URL}/tasks",
             json=body,
-            headers={"X-User-Id": str(user_id)}
+            headers={
+                "Authorization": auth_header,  # Propagar JWT al backend
+                "X-User-Id": str(user_id)       # También enviar X-User-Id por compatibilidad
+            }
         )
         return JSONResponse(
             status_code=response.status_code,
@@ -238,11 +273,15 @@ async def proxy_get_task(task_id: int, request: Request):
         raise HTTPException(status_code=401, detail="Authentication required")
     
     user_id = payload.get("user_id")
+    auth_header = request.headers.get("Authorization", "")
     
     try:
         response = await http_client.get(
             f"{TASK_SERVICE_URL}/tasks/{task_id}",
-            headers={"X-User-Id": str(user_id)}
+            headers={
+                "Authorization": auth_header,
+                "X-User-Id": str(user_id)
+            }
         )
         return JSONResponse(
             status_code=response.status_code,
@@ -313,11 +352,15 @@ async def proxy_get_notifications(request: Request):
         raise HTTPException(status_code=401, detail="Authentication required")
     
     user_id = payload.get("user_id")
+    auth_header = request.headers.get("Authorization", "")
     
     try:
         response = await http_client.get(
             f"{NOTIFICATION_SERVICE_URL}/notifications",
-            headers={"X-User-Id": str(user_id)}
+            headers={
+                "Authorization": auth_header,
+                "X-User-Id": str(user_id)
+            }
         )
         return JSONResponse(
             status_code=response.status_code,
