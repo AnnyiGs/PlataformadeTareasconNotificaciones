@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: task-platform
+  labels:
+    app: auth-service
+    tier: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: auth-service
+  ports:
+  - port: 8001
+    targetPort: 8001
+    protocol: TCP
+    name: http
+  sessionAffinity: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: task-service
+  namespace: task-platform
+  labels:
+    app: task-service
+    tier: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: task-service
+  ports:
+  - port: 8002
+    targetPort: 8002
+    protocol: TCP
+    name: http
+  sessionAffinity: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: task-platform
+  labels:
+    app: notification-service
+    tier: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: notification-service
+  ports:
+  - port: 8003
+    targetPort: 8003
+    protocol: TCP
+    name: http
+  sessionAffinity: None

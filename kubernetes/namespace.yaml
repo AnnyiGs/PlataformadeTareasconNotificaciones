@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: task-platform
+  labels:
+    name: task-platform
+    environment: production

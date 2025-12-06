@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: task-platform
+
+resources:
+  - namespace.yaml
+  - secrets-configmaps.yaml
+  - databases.yaml
+  - deployments/auth-service.yaml
+  - deployments/task-service.yaml
+  - deployments/notification-service.yaml
+  - services/backend-services.yaml
+  - ingress.yaml
+
+commonLabels:
+  project: task-platform
+  managed-by: kustomize
+
+commonAnnotations:
+  last-updated: "2025-12-06"
+  version: "1.0.0"
+
+images:
+  - name: annyigs/task-platform-auth-service
+    newTag: "1.0.0"
+  - name: annyigs/task-platform-task-service
+    newTag: "1.0.0"
+  - name: annyigs/task-platform-notification-service
+    newTag: "1.0.0"

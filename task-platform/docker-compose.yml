@@ -42,6 +42,20 @@ services:
     ports:
       - "8080:8080"
 
+  gateway:
+    build: ./gateway
+    container_name: api_gateway
+    restart: always
+    env_file: .env
+    depends_on:
+      - auth-service
+      - task-service
+      - notification-service
+    ports:
+      - "8000:8000"
+    networks:
+      - default
+
   auth-service:
     build: ./auth-service
     container_name: auth_service
