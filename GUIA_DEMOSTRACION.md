@@ -41,6 +41,23 @@ kubectl rollout restart deployment/notification-service -n task-platform
 kubectl get pods -n task-platform
 ```
 
+### 2.7 (DESTACADO) Apagar sin corromper datos
+```powershell
+# Detener workloads dejando datos intactos (PVCs se conservan)
+kubectl scale deployment --all -n task-platform --replicas=0
+
+# Confirmar que no quedan pods
+kubectl get pods -n task-platform
+
+# (Opcional) Limpiar objetos pero conservar datos (PVCs siguen vivos)
+kubectl delete deployment --all -n task-platform
+kubectl delete svc --all -n task-platform
+kubectl delete ingress --all -n task-platform
+
+# (Solo si deseas borrar TODO, incluidos datos) — no recomendado
+# kubectl delete pvc --all -n task-platform
+```
+
 ### 3. Verificar que los pods estén corriendo
 ```powershell
 kubectl get pods -n task-platform
