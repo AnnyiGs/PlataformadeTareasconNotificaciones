@@ -58,6 +58,12 @@ kubectl delete ingress --all -n task-platform
 # kubectl delete pvc --all -n task-platform
 ```
 
+**Notas de apagado:**
+- PVCs quedan intactos; solo borra `pvc` si quieres perder datos.
+- Docker Desktop: basta con cerrar la app.
+- Minikube: `minikube stop`. Kind: `kind delete cluster --name <nombre>`.
+
+
 ### 3. Verificar que los pods estén corriendo
 ```powershell
 kubectl get pods -n task-platform
