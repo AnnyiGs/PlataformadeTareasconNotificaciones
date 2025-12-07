@@ -21,7 +21,7 @@ Una plataforma completa de gestión de tareas que demuestra las mejores práctic
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      API Gateway (3 réplicas)               │
-│                    (Puerto: 8000)                            │
+│                    (Puerto: 8000)                           │
 └─────────────┬───────────────────────────────────────────────┘
               │
     ┌─────────┼─────────┬─────────────┐
