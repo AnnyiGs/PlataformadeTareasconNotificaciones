@@ -1,13 +1,13 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: auth-service
+  name: gateway
   namespace: task-platform
   labels:
-    app: auth-service
-    tier: backend
+    app: gateway
+    tier: api
 spec:
-  replicas: 2
+  replicas: 3
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -15,49 +15,40 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: auth-service
+      app: gateway
   template:
     metadata:
       labels:
-        app: auth-service
-        tier: backend
+        app: gateway
+        tier: api
     spec:
       containers:
-      - name: auth-service
-        image: andreajos/task-platform-auth-service:1.0.0
-        imagePullPolicy: Always
+      - name: gateway
+        image: andreajos/task-platform-gateway:1.1.0
         ports:
-        - name: http
-          containerPort: 8001
-          protocol: TCP
+        - containerPort: 8000
+          name: http
         env:
         - name: JWT_SECRET_KEY
           valueFrom:
             secretKeyRef:
               name: jwt-secrets
               key: JWT_SECRET_KEY
-        - name: DB_HOST
+        - name: AUTH_SERVICE_URL
           valueFrom:
             configMapKeyRef:
               name: service-urls
-              key: DB_HOST_MYSQL
-        - name: DB_PORT
+              key: AUTH_SERVICE_URL
+        - name: TASK_SERVICE_URL
           valueFrom:
             configMapKeyRef:
               name: service-urls
-              key: DB_PORT_MYSQL
-        - name: DB_USER
+              key: TASK_SERVICE_URL
+        - name: NOTIFICATION_SERVICE_URL
           valueFrom:
             configMapKeyRef:
               name: service-urls
-              key: DB_USER
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: database-credentials
-              key: DB_PASSWORD
-        - name: DB_NAME
-          value: "tasks_db"
+              key: NOTIFICATION_SERVICE_URL
         resources:
           requests:
             memory: "128Mi"
@@ -68,7 +59,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 8001
+            port: 8000
           initialDelaySeconds: 15
           periodSeconds: 10
           timeoutSeconds: 5
@@ -76,11 +67,11 @@ spec:
         readinessProbe:
           httpGet:
             path: /health
-            port: 8001
+            port: 8000
           initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 3
-          failureThreshold: 2
+          failureThreshold: 3
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: false
@@ -94,5 +85,5 @@ spec:
                 - key: app
                   operator: In
                   values:
-                  - auth-service
+                  - gateway
               topologyKey: kubernetes.io/hostname
