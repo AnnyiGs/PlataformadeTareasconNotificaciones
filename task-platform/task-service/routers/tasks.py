@@ -14,6 +14,12 @@ NOTIFICATION_SERVICE_URL = os.getenv("NOTIFICATION_SERVICE_URL", "http://notific
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
+
+def require_role(token: dict, allowed_roles: list[str]):
+    role = token.get("role", "user")
+    if role not in allowed_roles:
+        raise HTTPException(status_code=403, detail="Insufficient role")
+
 class TaskCreate(BaseModel):
     title: str
     description: str | None = None
@@ -30,7 +36,8 @@ class TaskOut(BaseModel):
 
 @router.post("/", response_model=TaskOut)
 def create_task(task: TaskCreate, token: dict = Depends(verify_token), db: Session = Depends(get_db)):
-    # token["user_id"] is the creator (supervisor)
+    # Only manager/admin can crear o reasignar tareas
+    require_role(token, ["manager", "admin"])
     x_user_id = token["user_id"]
     db_task = Task(
         title=task.title,
@@ -79,7 +86,8 @@ def update_status(task_id: int, status: str, token: dict = Depends(verify_token)
 
 @router.delete("/{task_id}")
 def delete_or_reassign(task_id: int, assigned_to: int | None = None, token: dict = Depends(verify_token), db: Session = Depends(get_db)):
-    # For now assume the requester is supervisor (no role check). If assigned_to provided, reassign, else delete
+    # Only manager/admin can borrar o reasignar
+    require_role(token, ["manager", "admin"])
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
