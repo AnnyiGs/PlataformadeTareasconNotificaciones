@@ -90,18 +90,18 @@ ARQUITECTURA:
 
 ┌─────────────────────────────────────────────────────────┐
 │              Kubernetes Cluster (task-platform)         │
-│  ┌─────────────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │  Gateway    │◄─┤ Auth Service │◄─┤ PostgreSQL   │  │
-│  │  (3 pods)   │  │  (2 pods)    │  │  (1 pod+PVC) │  │
-│  └──────┬──────┘  └──────────────┘  └──────────────┘  │
+│  ┌─────────────┐  ┌──────────────┐  ┌──────────────┐    │
+│  │  Gateway    │◄─┤ Auth Service │◄─┤ PostgreSQL   │    │
+│  │  (3 pods)   │  │  (2 pods)    │  │  (1 pod+PVC) │    │
+│  └──────┬──────┘  └──────────────┘  └──────────────┘    │
 │         │                                               │
-│  ┌──────▼──────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │Task Service │◄─┤Notification  │◄─┤   MySQL      │  │
-│  │ (3 pods)    │  │Service(2pods)│  │  (1 pod+PVC) │  │
-│  └─────────────┘  └──────────────┘  └──────────────┘  │
+│  ┌──────▼──────┐  ┌──────────────┐  ┌──────────────┐    │
+│  │Task Service │◄─┤Notification  │◄─┤   MySQL      │    │
+│  │ (3 pods)    │  │Service(2pods)│  │  (1 pod+PVC) │    │
+│  └─────────────┘  └──────────────┘  └──────────────┘    │
 │                                                         │
-│  ConfigMaps: service-urls                              │
-│  Secrets: jwt-secrets, database-credentials            │
+│  ConfigMaps: service-urls                               │
+│  Secrets: jwt-secrets, database-credentials             │
 └─────────────────────────────────────────────────────────┘
 
 ═══════════════════════════════════════════════════════════════════════════════════
