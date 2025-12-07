@@ -32,8 +32,8 @@ Una plataforma completa de gestión de tareas que demuestra las mejores práctic
 │Service │ │Service │ │Service   │ │            │
 │(2 rep) │ │(3 rep) │ │(2 rep)   │ │PostgreSQL  │
 └────────┘ └────────┘ └──────────┘ │  + MySQL   │
-   ▲         ▲         ▲            │            │
-   │         │         │            └────────────┘
+   ▲         ▲         ▲           │            │
+   │         │         │           └────────────┘
    └─────────┴─────────┘
    JWT Token Validation
    & Inter-Service Calls
