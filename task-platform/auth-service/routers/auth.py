@@ -27,16 +27,22 @@ def create_access_token(data: dict, expires_delta=None):
     return encoded_jwt
 
 @router.post("/register")
-def register(email: str, password: str, db: Session = Depends(get_db)):
+def register(email: str, password: str, role: str = "user", db: Session = Depends(get_db)):
     hashed = pwd_context.hash(password)
 
-    user = User(email=email, password=hashed)
+    user = User(email=email, password=hashed, role=role)
     db.add(user)
     db.commit()
     db.refresh(user)
 
-    access_token = create_access_token(data={"sub": str(user.id), "email": user.email})
-    return {"message": "User created", "id": user.id, "access_token": access_token, "token_type": "bearer"}
+    access_token = create_access_token(data={"sub": str(user.id), "email": user.email, "role": user.role})
+    return {
+        "message": "User created",
+        "id": user.id,
+        "role": user.role,
+        "access_token": access_token,
+        "token_type": "bearer",
+    }
 
 
 @router.post("/login")
@@ -49,5 +55,11 @@ def login(email: str, password: str, db: Session = Depends(get_db)):
     if not pwd_context.verify(password, user.password):
         raise HTTPException(status_code=401, detail="Contraseña incorrecta")
 
-    access_token = create_access_token(data={"sub": str(user.id), "email": user.email})
-    return {"message": "Login correcto", "user_id": user.id, "access_token": access_token, "token_type": "bearer"}
+    access_token = create_access_token(data={"sub": str(user.id), "email": user.email, "role": user.role})
+    return {
+        "message": "Login correcto",
+        "user_id": user.id,
+        "role": user.role,
+        "access_token": access_token,
+        "token_type": "bearer",
+    }
