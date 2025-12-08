@@ -1,0 +1,36 @@
+usuario normal
+
+$userResp = Invoke-RestMethod -Uri "http://localhost:8000/auth/register?email=demo1@example.com&password=demo123&role=user" -Method POST
+$userResp | Format-List
+$userToken = $userResp.access_token
+$userId = $userResp.id
+Write-Host "✅ Usuario ID=$userId creado"
+
+usuario admin
+
+$adminResp = Invoke-RestMethod -Uri "http://localhost:8000/auth/register?email=admin27@example.com&password=admin123&role=admin" -Method POST
+$adminResp | Format-List
+$adminToken = $adminResp.access_token
+$adminId = $adminResp.id
+Write-Host "✅ Admin ID=$adminId creado"
+
+
+terminal 3
+tarea para el user
+
+$adminHeaders = @{
+  "Authorization" = "Bearer $adminToken"
+  "Content-Type" = "application/json"
+}
+
+$taskBody = @{
+  title = "Demostración en clase"
+  description = "Presentar arquitectura de microservicios"
+  assigned_to = $userId
+} | ConvertTo-Json
+
+$taskResp = Invoke-RestMethod -Uri "http://localhost:8000/tasks/" -Method POST -Headers $adminHeaders -Body $taskBody
+$taskResp | Format-List
+$taskId = $taskResp.task_id
+Write-Host "✅ Tarea ID=$taskId creada para usuario $userId"
+

@@ -1,5 +1,295 @@
 # 🎯 GUÍA DE DEMOSTRACIÓN - PLATAFORMA DE TAREAS CON NOTIFICACIONES
 
+## ⚡ OPCIÓN A: Demo con Docker Compose (RECOMENDADO - MÁS RÁPIDO) 
+
+### 📋 Preparación Previa (2-3 minutos)
+
+#### 1. Verificar que Docker Desktop esté corriendo
+```powershell
+docker --version
+docker ps
+```
+
+#### 2. Navegar a la carpeta correcta
+```powershell
+cd c:\Users\anyio\Desktop\TareasConNotificacion\PlataformadeTareasconNotificaciones\task-platform
+```
+
+#### 3. Limpiar contenedores antiguos (si existen)
+```powershell
+docker-compose down --remove-orphans
+```
+
+#### 4. Levantar todos los servicios
+```powershell
+docker-compose up -d
+```
+
+**Esperar 30-60 segundos** a que las bases de datos arranquen completamente.
+
+#### 5. Verificar que todo está corriendo
+```powershell
+docker-compose ps
+```
+
+**Todos deben mostrar `Up` o `healthy`**
+
+---
+
+## 🎬 DEMOSTRACIÓN CON DOCKER COMPOSE (10-15 minutos)
+
+### PASO 1: Verificar servicios (1 minuto)
+
+**En PowerShell:**
+```powershell
+# Ver todos los contenedores corriendo
+docker-compose ps
+
+# Mostrar logs de los servicios
+docker-compose logs gateway
+```
+
+**Debería ver:**
+- gateway: corriendo en puerto 8000
+- auth-service: corriendo en puerto 8001
+- task-service: corriendo en puerto 8002
+- notification-service: corriendo en puerto 8003
+- postgres: base de datos para auth
+- mysql: base de datos para tasks/notifications
+- redis: caché
+- adminer: herramienta web para ver BD
+
+---
+
+### PASO 2: Registrar Usuario Normal (2 minutos)
+
+**En PowerShell:**
+```powershell
+# Registrar un usuario normal
+$userResp = Invoke-RestMethod -Uri "http://localhost:8001/auth/register?email=demo1@example.com&password=demo123&role=user" -Method POST
+$userResp | Format-List
+
+# Guardar token y ID
+$userToken = $userResp.access_token
+$userId = $userResp.id
+
+Write-Host "✅ Usuario creado: ID=$userId"
+Write-Host "✅ Token guardado para próximos pasos"
+```
+
+**Explicar:**
+- Se registra un usuario normal
+- Se genera un JWT token automáticamente
+- El token expira en 8 horas
+- Se guarda el ID para asignar tareas
+
+---
+
+### PASO 3: Registrar Admin (2 minutos)
+
+**En PowerShell:**
+```powershell
+# Registrar un admin
+$adminResp = Invoke-RestMethod -Uri "http://localhost:8001/auth/register?email=admin27@example.com&password=admin123&role=admin" -Method POST
+$adminResp | Format-List
+
+# Guardar token y ID
+$adminToken = $adminResp.access_token
+$adminId = $adminResp.id
+
+Write-Host "✅ Admin creado: ID=$adminId"
+Write-Host "✅ Token guardado para crear tareas"
+```
+
+**Explicar:**
+- Solo un admin puede crear tareas para otros usuarios
+- El usuario normal NO puede crear tareas
+- Esto demuestra control de acceso basado en roles (RBAC)
+
+---
+
+### PASO 4: Crear una Tarea (2 minutos)
+
+**En PowerShell:**
+```powershell
+# Preparar headers con token del admin
+$adminHeaders = @{
+    "Authorization" = "Bearer $adminToken"
+    "Content-Type" = "application/json"
+}
+
+# Crear tarea asignada al usuario normal
+$taskBody = @{
+    title = "Demostración en clase"
+    description = "Presentar arquitectura de microservicios en Docker"
+    assigned_to = $userId
+} | ConvertTo-Json
+
+$taskResp = Invoke-RestMethod -Uri "http://localhost:8002/tasks/" -Method POST -Headers $adminHeaders -Body $taskBody
+$taskResp | Format-List
+
+$taskId = $taskResp.task_id
+Write-Host "✅ Tarea ID=$taskId creada"
+Write-Host "✅ Asignada a usuario ID=$userId"
+```
+
+**Mostrar en pantalla:**
+- La tarea se crea en MySQL
+- Se genera una notificación automática
+- Task-service → Notification-service (comunicación inter-servicios)
+
+---
+
+### PASO 5: Ver Tareas del Usuario (2 minutos)
+
+**En PowerShell:**
+```powershell
+# Preparar headers con token del usuario normal
+$userHeaders = @{
+    "Authorization" = "Bearer $userToken"
+    "Content-Type" = "application/json"
+}
+
+# Ver tareas asignadas al usuario
+$tasksResp = Invoke-RestMethod -Uri "http://localhost:8002/tasks/assigned" -Method GET -Headers $userHeaders
+$tasksResp | Format-Table -AutoSize
+
+Write-Host "✅ Usuario ve solo sus tareas"
+Write-Host "✅ Esto demuestra USER ISOLATION"
+```
+
+**Explicar:**
+- El usuario normal solo ve sus tareas
+- No puede ver tareas de otros usuarios
+- Cada usuario está aislado en la base de datos
+
+---
+
+### PASO 6: Ver Notificaciones (2 minutos)
+
+**En PowerShell:**
+```powershell
+# Ver notificaciones del usuario
+$notifResp = Invoke-RestMethod -Uri "http://localhost:8003/notifications/" -Method GET -Headers $userHeaders
+$notifResp | Format-Table -AutoSize
+
+Write-Host "✅ El usuario recibió notificación automática"
+Write-Host "✅ Notificación: Nueva tarea asignada"
+```
+
+**Mostrar:**
+- Notificación generada automáticamente al crear la tarea
+- Contiene detalles de la tarea
+- `is_read: false` (sin leer)
+
+---
+
+### PASO 7: Acceso Denegado (Demo de Seguridad - 1 minuto)
+
+**En PowerShell:**
+```powershell
+# Intentar crear tarea como usuario normal (debe fallar)
+$taskBody2 = @{
+    title = "Intento de ataque"
+    description = "El usuario normal intenta crear una tarea"
+    assigned_to = $adminId
+} | ConvertTo-Json
+
+try {
+    $result = Invoke-RestMethod -Uri "http://localhost:8002/tasks/" -Method POST -Headers $userHeaders -Body $taskBody2
+    Write-Host "❌ FALLO: El usuario no debería poder crear tareas"
+} catch {
+    Write-Host "✅ CORRECTO: Acceso denegado (403 Forbidden)"
+    Write-Host "✅ Solo admins pueden crear tareas"
+}
+```
+
+**Explicar:**
+- Control de acceso basado en roles (RBAC)
+- Autenticación con JWT
+- Validación de roles en cada endpoint
+
+---
+
+### PASO 8: Ver Adminer - Bases de Datos (Bonus - 1 minuto)
+
+**En navegador:**
+```
+http://localhost:8080
+```
+
+**Mostrar:**
+- Sistema de gestión web para ver las bases de datos
+- PostgreSQL con tabla de usuarios (auth_db)
+- MySQL con tablas de tareas y notificaciones
+
+---
+
+## 📊 ARQUITECTURA MOSTRADA
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     DEMO CON DOCKER COMPOSE                  │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │           CLIENTE (PowerShell en terminal)           │   │
+│  └──────────────────┬───────────────────────────────────┘   │
+│                     │                                        │
+│  ┌──────────────────▼────────────────────────────────────┐   │
+│  │          API GATEWAY (puerto 8000)                   │   │
+│  │  ▪ Request routing                                   │   │
+│  │  ▪ Load balancing                                    │   │
+│  └──┬─────────────────┬───────────────────┬──────────────┘   │
+│     │                 │                   │                  │
+│  ┌──▼──────────────┐ ┌▼────────────────┐ ┌▼──────────────┐   │
+│  │  AUTH SERVICE   │ │  TASK SERVICE   │ │NOTIFICATION   │   │
+│  │  (puerto 8001)  │ │  (puerto 8002)  │ │(puerto 8003)  │   │
+│  └──┬──────────────┘ └┬────────────────┘ └┬──────────────┘   │
+│     │                 │                   │                  │
+│  ┌──▼──────────────┐ ┌▼────────────────┐ │                  │
+│  │    PostgreSQL   │ │     MySQL       ◄──┘                  │
+│  │  (usuario auth) │ │  (tasks + notif)│                     │
+│  └─────────────────┘ └─────────────────┘                     │
+│                                                              │
+│  + Redis (caché)                                            │
+│  + Adminer (web UI para ver BD)                             │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## ✅ PUNTOS CLAVE A MENCIONAR
+
+1. **Microservicios**: 3 servicios independientes
+2. **Comunicación**: REST API + inter-servicios automáticos
+3. **Bases de datos**: PostgreSQL (auth) + MySQL (tasks/notif)
+4. **Seguridad**: JWT tokens + RBAC (admin vs user)
+5. **Escalabilidad**: Docker permite escalar rápidamente
+6. **Automatización**: Notificaciones generadas automáticamente
+
+---
+
+## 🔚 AL FINALIZAR LA DEMO
+
+**Apagar servicios:**
+```powershell
+cd c:\Users\anyio\Desktop\TareasConNotificacion\PlataformadeTareasconNotificaciones\task-platform
+
+docker-compose down
+```
+
+**Esto mantiene los datos en volúmenes (no los borra)**
+
+---
+
+---
+
+---
+
+# 🔵 OPCIÓN B: Demo con Kubernetes (ALTERNATIVA - si quieres mostrar orquestación)
+
 ## 📋 Preparación Previa (5-10 minutos antes de la clase)
 
 ### 1. Verificar que Docker Desktop esté corriendo
@@ -175,97 +465,96 @@ kubectl get pvc -n task-platform
 kubectl port-forward -n task-platform svc/auth-service 8001:8001
 ```
 
-#### 4.2 Registrar Usuario
+#### 4.2 Registrar Usuario Normal
 
 **Terminal 2:**
 ```powershell
 # Registrar usuario normal
-Invoke-RestMethod -Uri "http://localhost:8001/auth/register?email=demo@example.com&password=demo123&role=user" -Method POST
+$userResp = Invoke-RestMethod -Uri "http://localhost:8001/auth/register?email=demo1@example.com&password=demo123&role=user" -Method POST
+$userResp | Format-List
+
+# Guardar el token y ID
+$userToken = $userResp.access_token
+$userId = $userResp.id
+Write-Host "✅ Usuario ID=$userId registrado con role=$($userResp.role)"
 ```
-
-**Mostrar respuesta:**
-- `access_token`: JWT generado
-- `user_id`: ID del usuario
-- `role`: Rol asignado
-
-**Guardar el token:**
-```powershell
-$userToken = "COPIAR_TOKEN_AQUI"
-```
-
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyMiIsImVtYWlsIjoiZGVtbzFAZXhhbXBsZS5jb20iLCJyb2xlIjoidXNlci
+               IsImV4cCI6MTc2NTE3NDk1OX0.ZjG77VC-_jCRynAqES6iFm-R_b_cEAcmjoUHf2Bs5cg
 #### 4.3 Registrar Admin
 
+**Terminal 2:**
 ```powershell
 # Registrar usuario admin
-Invoke-RestMethod -Uri "http://localhost:8001/auth/register?email=admin@example.com&password=admin123&role=admin" -Method POST
+$adminResp = Invoke-RestMethod -Uri "http://localhost:8001/auth/register?email=admin27@example.com&password=admin123&role=admin" -Method POST
+$adminResp | Format-List
+
+# Guardar el token y ID
+$adminToken = $adminResp.access_token
+$adminId = $adminResp.id
+Write-Host "✅ Admin ID=$adminId registrado con role=$($adminResp.role)"
 ```
 
-**Guardar el token admin:**
-```powershell
-$adminToken = "COPIAR_TOKEN_ADMIN_AQUI"
-```
+#### 4.4 Cambiar a Task Service
 
-#### 4.4 Login
-
-```powershell
-# Probar login
-Invoke-RestMethod -Uri "http://localhost:8001/auth/login?email=demo@example.com&password=demo123" -Method POST
-```
-
----
-
-#### 4.5 Crear Tarea
-
-**Cambiar port-forward a task-service (Ctrl+C en Terminal 1):**
-
-**Terminal 1:**
+**Terminal 1 (Ctrl+C para detener el port-forward anterior):**
 ```powershell
 kubectl port-forward -n task-platform svc/task-service 8002:8002
 ```
 
+---
+
+#### 4.5 Crear Tarea (con Admin)
+
 **Terminal 2:**
 ```powershell
-# Configurar headers
-$adminToken = "TOKEN_ADMIN_AQUI"
-$headers = @{
+# Configurar headers con token admin
+$adminHeaders = @{
     "Authorization" = "Bearer $adminToken"
     "Content-Type" = "application/json"
 }
 
-# Crear tarea
-$body = @{
+# Crear tarea asignada al usuario normal
+$taskBody = @{
     title = "Demostración en clase"
     description = "Presentar arquitectura de microservicios"
-    assigned_to = 1  # ID del usuario demo
+    assigned_to = $userId
 } | ConvertTo-Json
 
-Invoke-RestMethod -Uri "http://localhost:8002/tasks/" -Method POST -Headers $headers -Body $body
+$taskResp = Invoke-RestMethod -Uri "http://localhost:8002/tasks/" -Method POST -Headers $adminHeaders -Body $taskBody
+$taskResp | Format-List
+
+$taskId = $taskResp.task_id
+Write-Host "✅ Tarea ID=$taskId creada para usuario $userId"
+Write-Host "✅ Notificación generada automáticamente"
 ```
 
 **Explicar:**
-- ✅ Solo admins pueden crear tareas
-- ✅ Tarea asignada al usuario con ID 1
-- ✅ Automáticamente se genera una notificación
+- ✅ Solo admin (ID $adminId) puede crear tareas
+- ✅ Tarea asignada a usuario normal (ID $userId)
+- ✅ Se genera notificación automática
 
 ---
 
-#### 4.6 Ver Tareas Asignadas
+#### 4.6 Ver Tareas del Usuario
 
+**Terminal 2:**
 ```powershell
-# Usar token del usuario (no admin)
-$userToken = "TOKEN_USUARIO_AQUI"
+# Configurar headers con token del usuario
 $userHeaders = @{
     "Authorization" = "Bearer $userToken"
     "Content-Type" = "application/json"
 }
 
-# Listar tareas asignadas
-Invoke-RestMethod -Uri "http://localhost:8002/tasks/assigned" -Method GET -Headers $userHeaders
+# Ver tareas asignadas al usuario
+$tasksResp = Invoke-RestMethod -Uri "http://localhost:8002/tasks/assigned" -Method GET -Headers $userHeaders
+$tasksResp | Format-Table
+
+Write-Host "✅ Usuario ID=$userId ve solo sus $($tasksResp.Count) tarea(s)"
 ```
 
 **Explicar:**
-- ✅ Cada usuario solo ve sus tareas
-- ✅ Aislamiento de datos por usuario (user isolation)
+- ✅ Usuario solo ve sus propias tareas
+- ✅ No puede ver tareas de otros usuarios (user isolation)
 
 ---
 

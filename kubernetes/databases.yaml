@@ -41,6 +41,8 @@ spec:
             secretKeyRef:
               name: database-credentials
               key: MYSQL_ROOT_PASSWORD
+        - name: MYSQL_ROOT_HOST
+          value: "%"
         - name: MYSQL_DATABASE
           value: "tasks_db"
         resources:
