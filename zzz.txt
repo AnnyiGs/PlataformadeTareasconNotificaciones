@@ -53,9 +53,9 @@ Write-Host "✅ Tarea ID=$($taskResp.id) creada por Admin ID=$adminId y asignada
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Descripción: Crea un usuario regular con rol "user" en la plataforma.
 Genera un token JWT que se almacena en $userToken.
-EDITABLE: email y password
+EDITABLE: email (chambeador2) y password (demo123) - cambiar para que sean únicos cada vez que ejecutes
 
-$userResp = Invoke-RestMethod -Uri "http://localhost:8001/auth/register?email=chambeador2@example.com&password=demo123&role=user" -Method POST
+$userResp = Invoke-RestMethod -Uri "http://localhost:8001/auth/register" -Method POST -Headers @{"Content-Type" = "application/json"} -Body '{"email":"chambeador2@example.com","password":"demo123","role":"user"}'
 $userResp | Format-List
 $userToken = $userResp.access_token
 $userId = $userResp.id
@@ -66,9 +66,9 @@ Write-Host "✅ Usuario ID=$userId creado con token: $userToken"
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Descripción: Crea un usuario administrador con rol "admin".
 Solo admins pueden crear y asignar tareas.
-EDITABLE: email y password
+EDITABLE: email (jefote2) y password (admin123) - cambiar para que sean únicos cada vez que ejecutes
 
-$adminResp = Invoke-RestMethod -Uri "http://localhost:8001/auth/register?email=jefote2@example.com&password=admin123&role=admin" -Method POST
+$adminResp = Invoke-RestMethod -Uri "http://localhost:8001/auth/register" -Method POST -Headers @{"Content-Type" = "application/json"} -Body '{"email":"jefote2@example.com","password":"admin123","role":"admin"}'
 $adminResp | Format-List
 $adminToken = $adminResp.access_token
 $adminId = $adminResp.id
