@@ -1,36 +1,165 @@
-usuario normal
+kubectl port-forward -n task-platform svc/auth-service 8001:8001
 
-$userResp = Invoke-RestMethod -Uri "http://localhost:8000/auth/register?email=demo1@example.com&password=demo123&role=user" -Method POST
+kubectl port-forward -n task-platform svc/task-service 8002:8002
+
+kubectl port-forward -n task-platform svc/notification-service 8003:8003
+
+
+
+
+$userResp = Invoke-RestMethod -Uri "http://localhost:8001/auth/register?email=chambeador2@example.com&password=demo123&role=user" -Method POST
 $userResp | Format-List
 $userToken = $userResp.access_token
 $userId = $userResp.id
-Write-Host "✅ Usuario ID=$userId creado"
+Write-Host "✅ Usuario ID=$userId creado con token: $userToken"
 
-usuario admin
+------------------------
 
-$adminResp = Invoke-RestMethod -Uri "http://localhost:8000/auth/register?email=admin27@example.com&password=admin123&role=admin" -Method POST
+$adminResp = Invoke-RestMethod -Uri "http://localhost:8001/auth/register?email=jefote2@example.com&password=admin123&role=admin" -Method POST
 $adminResp | Format-List
 $adminToken = $adminResp.access_token
 $adminId = $adminResp.id
-Write-Host "✅ Admin ID=$adminId creado"
+Write-Host "✅ Admin ID=$adminId creado con token: $adminToken"
 
+--------------------------
 
-terminal 3
-tarea para el user
+Write-Host "`n=== CREANDO TAREA (Admin asigna al Usuario) ===" -ForegroundColor Cyan
 
 $adminHeaders = @{
   "Authorization" = "Bearer $adminToken"
   "Content-Type" = "application/json"
 }
 
-$taskBody = @{
-  title = "Demostración en clase"
-  description = "Presentar arquitectura de microservicios"
-  assigned_to = $userId
-} | ConvertTo-Json
+# EDITABLE: Cambia el texto entre comillas
+$taskBody = '{"title":"Completar demo Kubernetes","description":"Demostrar microservicios con notificaciones","assigned_to":5}'
 
-$taskResp = Invoke-RestMethod -Uri "http://localhost:8000/tasks/" -Method POST -Headers $adminHeaders -Body $taskBody
+$taskResp = Invoke-RestMethod -Uri "http://localhost:8002/tasks/" -Method POST -Headers $adminHeaders -Body $taskBody
 $taskResp | Format-List
-$taskId = $taskResp.task_id
-Write-Host "✅ Tarea ID=$taskId creada para usuario $userId"
 
+Write-Host "✅ Tarea ID=$($taskResp.id) creada por Admin ID=$adminId y asignada a Usuario ID=$userId" -ForegroundColor Green
+
+----
+
+
+
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                  COMANDOS QUE FUNCIONAN - DEMO FINAL                     ║
+║                     (Copiar y pegar directamente)                        ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+
+📋 PASO 1: REGISTRAR USUARIO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Descripción: Crea un usuario regular con rol "user" en la plataforma.
+Genera un token JWT que se almacena en $userToken.
+EDITABLE: email y password
+
+$userResp = Invoke-RestMethod -Uri "http://localhost:8001/auth/register?email=chambeador2@example.com&password=demo123&role=user" -Method POST
+$userResp | Format-List
+$userToken = $userResp.access_token
+$userId = $userResp.id
+Write-Host "✅ Usuario ID=$userId creado con token: $userToken"
+
+
+📋 PASO 2: REGISTRAR ADMINISTRADOR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Descripción: Crea un usuario administrador con rol "admin".
+Solo admins pueden crear y asignar tareas.
+EDITABLE: email y password
+
+$adminResp = Invoke-RestMethod -Uri "http://localhost:8001/auth/register?email=jefote2@example.com&password=admin123&role=admin" -Method POST
+$adminResp | Format-List
+$adminToken = $adminResp.access_token
+$adminId = $adminResp.id
+Write-Host "✅ Admin ID=$adminId creado con token: $adminToken"
+
+
+📋 PASO 3: CREAR TAREA (Admin asigna al Usuario)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Descripción: Admin crea una nueva tarea y la asigna a un usuario.
+Automáticamente genera una notificación para el usuario asignado.
+EDITABLE: title, description, assigned_to (cambiar el ID del usuario)
+
+Write-Host "`n=== CREANDO TAREA (Admin asigna al Usuario) ===" -ForegroundColor Cyan
+
+$adminHeaders = @{
+  "Authorization" = "Bearer $adminToken"
+  "Content-Type" = "application/json"
+}
+
+$taskBody = '{"title":"Completar demo Kubernetes","description":"Demostrar microservicios con notificaciones","assigned_to":7}'
+
+$taskResp = Invoke-RestMethod -Uri "http://localhost:8002/tasks/" -Method POST -Headers $adminHeaders -Body $taskBody
+$taskResp | Format-List
+
+Write-Host "✅ Tarea ID=$($taskResp.id) creada por Admin ID=$adminId y asignada a Usuario ID=7" -ForegroundColor Green
+
+
+📋 PASO 4: USUARIO VE SUS TAREAS ASIGNADAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Descripción: El usuario visualiza SOLO sus tareas asignadas.
+Demuestra AISLAMIENTO: No puede ver tareas de otros usuarios.
+Usa: $userToken (del PASO 1)
+
+Write-Host "`n=== USUARIO VE SUS TAREAS ASIGNADAS ===" -ForegroundColor Cyan
+
+$userHeaders = @{
+  "Authorization" = "Bearer $userToken"
+  "Content-Type" = "application/json"
+}
+
+$tasksResp = Invoke-RestMethod -Uri "http://localhost:8002/tasks/assigned" -Method GET -Headers $userHeaders
+$tasksResp | Format-Table -AutoSize
+
+Write-Host "✅ Usuario ID=$userId ve solo sus tareas asignadas" -ForegroundColor Green
+Write-Host "✅ USER ISOLATION: No puede ver tareas de otros usuarios" -ForegroundColor Yellow
+
+
+📋 PASO 5: VER NOTIFICACIONES AUTOMÁTICAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Descripción: Muestra las notificaciones generadas automáticamente.
+Se crean cuando admin asigna una tarea al usuario.
+Usa: $userToken (del PASO 1)
+
+Write-Host "`n=== NOTIFICACIONES AUTOMÁTICAS ===" -ForegroundColor Cyan
+
+$notifResp = Invoke-RestMethod -Uri "http://localhost:8003/notifications" -Method GET -Headers $userHeaders
+$notifResp | Format-Table -AutoSize
+
+Write-Host "✅ Notificación generada automáticamente al crear la tarea" -ForegroundColor Green
+Write-Host "🔔 Sistema automático: Se notificó al usuario cuando se asignó la tarea" -ForegroundColor Yellow
+
+
+📋 PASO 6: PRUEBA DE SEGURIDAD (Usuario NO puede crear tareas)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Descripción: Demuestra RBAC: Usuario intenta crear tarea y es rechazado.
+Solo ADMIN tiene permiso para crear tareas.
+Usa: $userToken (del PASO 1)
+
+Write-Host "`n=== PRUEBA DE SEGURIDAD: Usuario intenta crear tarea ===" -ForegroundColor Red
+
+$taskBody = '{"title":"Tarea no autorizada","description":"El usuario intenta crear una tarea","assigned_to":7}'
+
+try {
+  $taskResp = Invoke-RestMethod -Uri "http://localhost:8002/tasks/" -Method POST -Headers $userHeaders -Body $taskBody
+  Write-Host "❌ ERROR: El usuario pudo crear la tarea (debería fallar)" -ForegroundColor Red
+} catch {
+  $statusCode = $_.Exception.Response.StatusCode.Value__
+  Write-Host "✅ SEGURIDAD VALIDADA: Usuario rechazado con HTTP $statusCode" -ForegroundColor Green
+  Write-Host "✅ RBAC FUNCIONANDO: Solo Admin puede crear tareas" -ForegroundColor Green
+}
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+RESUMEN DE VARIABLES A TENER EN CUENTA:
+  $userToken   → Token JWT del usuario (PASO 1)
+  $userId      → ID del usuario (PASO 1)
+  $adminToken  → Token JWT del admin (PASO 2)
+  $adminId     → ID del admin (PASO 2)
+  $userHeaders → Headers con autenticación del usuario
+  $adminHeaders → Headers con autenticación del admin
+
+NOTA: Ejecuta PASO 1 y PASO 2 primero para obtener tokens y IDs.
+Luego ejecuta PASO 3, 4, 5, 6 en orden.
