@@ -143,7 +143,15 @@ Para una demostración completa de 15-20 minutos que incluye:
 - Generación automática de notificaciones
 - Escalabilidad y resiliencia
 
-👉 **Ver**: [GUIA_DEMOSTRACION.md](./GUIA_DEMOSTRACION.md)
+👉 **Guía paso a paso (con comandos)**: [GUIA_DEMOSTRACION.md](./GUIA_DEMOSTRACION.md)
+
+### 🎥 Videos de la Demo
+
+- **Video 1 – Pruebas en consola (Kubernetes + PowerShell):**  
+    https://drive.google.com/file/d/1dcrFWAOrcoPoiyumaU_mfZc_-h8n68-U/view?usp=sharing
+
+- **Video 2 – Pruebas desde el sistema (interfaz de la app):**  
+    https://drive.google.com/file/d/1hGZAS1pWRtBr48P65oHxPh_4kif7tP0B/view?usp=sharing
 
 ---
 
