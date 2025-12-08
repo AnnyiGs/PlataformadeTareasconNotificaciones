@@ -145,6 +145,9 @@ Para una demostración completa de 15-20 minutos que incluye:
 
 👉 **Guía paso a paso (con comandos)**: [GUIA_DEMOSTRACION.md](./GUIA_DEMOSTRACION.md)
 
+📄 **Apoyo visual para la presentación**:
+- Slides/resumen en PDF: `ORBIT.pdf` (documento de referencia para exponer el proyecto)
+
 ### 🎥 Videos de la Demo
 
 - **Video 1 – Pruebas en consola (Kubernetes + PowerShell):**  
